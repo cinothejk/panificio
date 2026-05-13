@@ -1,5 +1,7 @@
 "use client";
 
+export const ssr = false;
+
 import { useRouter } from "next/navigation";
 import { 
   DndContext,
