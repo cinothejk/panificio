@@ -2,6 +2,8 @@
 
 import { useDraggable } from "@dnd-kit/core";
 
+
+
 type Props = {
   order: any;
   children: React.ReactNode;
@@ -16,13 +18,14 @@ export default function OrderCard({
     listeners,
     setNodeRef,
     transform,
+    
   } = useDraggable({
     id: order.id,
   });
 
   const style = transform
     ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0) `,
       }
     : undefined;
 
@@ -32,6 +35,7 @@ export default function OrderCard({
       style={style}
       {...listeners}
       {...attributes}
+      
     >
       {children}
     </div>

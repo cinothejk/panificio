@@ -48,6 +48,7 @@ export default function OrdersPage() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [search, setSearch] = useState("");
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -62,10 +63,29 @@ export default function OrdersPage() {
         () => loadOrders()
       )
       .subscribe();
+    
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
 
     return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+
       supabase.removeChannel(channel);
     };
+
+    /*
+    return () => {
+      supabase.removeChannel(channel);
+    }; */
   }, []);
 
   async function checkUser() {
@@ -245,6 +265,43 @@ export default function OrdersPage() {
     loadOrders();
   }
 
+  async function editOrder(order: Order) {
+    setEditingOrderId(order.id);
+
+    setCustomerName(order.customer_name);
+    setCustomerPhone(order.customer_phone || "");
+    setDeliveryTime(order.delivery_time || "");
+
+    const { data: items } = await supabase
+      .from("order_items")
+      .select(`
+        product_id,
+        quantity,
+        unit_price,
+        weight,
+        products (
+          name,
+          category,
+          price_type
+        )
+      `)
+      .eq("order_id", order.id);
+
+    if (!items) return;
+
+    const formatted: CartItem[] = items.map((i: any) => ({
+      product_id: i.product_id,
+      name: i.products.name,
+      category: i.products.category,
+      price_type: i.products.price_type,
+      quantity: i.quantity,
+      unit_price: i.unit_price,
+      weight: i.weight || undefined,
+    }));
+
+    setCartItems(formatted);
+  }
+
   function resetForm() {
     setCustomerName("");
     setCustomerPhone("");
@@ -254,26 +311,52 @@ export default function OrdersPage() {
     setEditingOrderId(null);
   }
 
+  async function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }
+
+
   return (
-    <main className="h-screen bg-gray-100 p-6 overflow-hidden">
+    <main className="min-h-screen bg-gray-100 p-4 lg:p-6 overflow-y-auto">
 
       {/* HEADER */}
-      <div className="flex justify-between mb-6">
-        <h1 className="text-4xl font-bold">Gestione Ordini</h1>
+      <div className="flex items-center justify-between mb-6 gap-4">
+        <h1 className="text-2xl lg:text-4xl font-bold">Gestione Ordini</h1>
 
-        <button
-          onClick={() => supabase.auth.signOut().then(() => router.push("/login"))}
-          className="bg-red-500 text-white px-5 py-3 rounded-2xl"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-3">
+
+          <button
+            onClick={toggleFullscreen}
+            className="bg-black text-white px-5 py-3 rounded-2xl font-semibold"
+          >
+            {isFullscreen ? "Esci Fullscreen" : "Fullscreen"}
+          </button>
+
+          <button
+            onClick={() =>
+              supabase.auth
+                .signOut()
+                .then(() => router.push("/login"))
+            }
+            className="bg-red-500 text-white px-5 py-3 rounded-2xl font-semibold"
+          >
+            Logout
+          </button>
+
+        </div>
       </div>
 
       {/* 3 COLONNE */}
-      <div className="grid grid-cols-3 gap-6 h-[calc(100vh-120px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-120px)]">
 
         {/* COL 1 */}
-        <div className="space-y-4 overflow-y-auto">
+        <div className="space-y-4 lg:overflow-y-auto">
 
           {/* CLIENTE */}
           <div className="bg-white p-4 rounded-3xl">
@@ -340,7 +423,7 @@ export default function OrdersPage() {
         </div>
 
         {/* COL 2 */}
-        <div className="bg-white p-4 rounded-3xl overflow-y-auto">
+        <div className="bg-white p-4 rounded-3xl lg:overflow-y-auto lg:sticky lg:top-6">
 
           <h2 className="font-bold mb-4">Ordine</h2>
 
@@ -391,7 +474,7 @@ export default function OrdersPage() {
         </div>
 
         {/* COL 3 */}
-        <div className="bg-white p-4 rounded-3xl overflow-y-auto">
+        <div className="bg-white p-4 rounded-3xl lg:overflow-y-auto lg:sticky lg:top-6">
 
           <h2 className="font-bold mb-4">Ordini Live</h2>
 
@@ -404,7 +487,10 @@ export default function OrdersPage() {
               </div>
 
               <div className="flex gap-2 mt-2">
-                <button className="bg-black text-white px-3 py-1 rounded-xl">
+                <button
+                  onClick={() => editOrder(o)}
+                  className="bg-black text-white px-3 py-1 rounded-xl"
+                >
                   Modifica
                 </button>
 

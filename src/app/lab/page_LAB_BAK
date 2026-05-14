@@ -83,7 +83,7 @@ export default function LabPage() {
           table: "orders",
         },
         () => {
-          audio.play().catch(() => {});
+          audio.play();
           loadOrders();
         }
       )
@@ -144,7 +144,10 @@ export default function LabPage() {
 
     if (error) {
       console.error(error);
+      return;
     }
+
+    loadOrders();
   }
 
   async function handleDragEnd(
@@ -232,60 +235,42 @@ export default function LabPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f1ea] p-3 lg:p-4 overflow-y-auto">
+    <main className="h-screen overflow-hidden bg-gray-100 p-4">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-4xl font-bold">
+          Laboratorio
+        </h1>
 
-        <div className="flex items-center gap-4">
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            router.push("/login");
+          }}
+          className="bg-red-500 text-white px-4 py-2 rounded-xl"
+        >
+          Logout
+        </button>
 
-          <div className="w-14 h-14 rounded-2xl bg-[#2d1f16] text-white flex items-center justify-center text-3xl font-black shadow-lg">
-            C
-          </div>
-
-          <div>
-            <h1 className="text-2xl lg:text-4xl font-black tracking-tight">
-              CHEPAN
-            </h1>
-
-            <div className="text-gray-500 font-medium">
-              Laboratorio Live
-            </div>
-          </div>
-
-        </div>
-
-        <div className="flex gap-3">
-
-          <button
-            onClick={() => {
-              if (document.fullscreenElement) {
-                document.exitFullscreen();
-              } else {
-                document.documentElement.requestFullscreen();
-              }
-            }}
-            className="bg-[#2d1f16] text-white px-5 py-3 rounded-2xl text-lg font-semibold"
-          >
-            Fullscreen
-          </button>
-
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push("/login");
-            }}
-            className="bg-red-500 text-white px-5 py-3 rounded-2xl text-lg font-semibold"
-          >
-            Logout
-          </button>
-
-        </div>
-
+        <button
+          onClick={() => {
+            if (
+              document.fullscreenElement
+            ) {
+              document.exitFullscreen();
+            } else {
+              document.documentElement.requestFullscreen();
+            }
+          }}
+          className="bg-black text-white px-5 py-3 rounded-2xl text-lg font-semibold"
+        >
+          Fullscreen
+        </button>
       </div>
 
       {/* BOARD */}
       <DndContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 lg:h-[calc(100vh-110px)]">
+        <div className="grid grid-cols-4 gap-4 h-[calc(100vh-100px)]">
           {columns.map((column) => {
             const columnOrders =
               orders.filter(
@@ -297,27 +282,18 @@ export default function LabPage() {
               <Column
                 key={column}
                 id={column}
-                className={`
-                    rounded-3xl
-                    p-4
-                    lg:overflow-y-auto
-                    border
-                    border-white/40
-                    backdrop-blur-sm
-                    shadow-sm
-                    ${columnColors[column]}
-                  `}
+                className={`rounded-3xl p-4 overflow-y-auto ${columnColors[column]}`}
               >
                 {/* COLUMN HEADER */}
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-xl lg:text-2xl font-black tracking-tight">
+                  <h2 className="text-2xl font-bold">
                     {column.replaceAll(
                       "_",
                       " "
                     )}
                   </h2>
 
-                  <div className="bg-[#2d1f16] text-white rounded-2xl px-4 py-2 text-lg font-black shadow">
+                  <div className="bg-black text-white rounded-full px-4 py-2 text-lg font-bold">
                     {
                       columnOrders.length
                     }
@@ -329,13 +305,10 @@ export default function LabPage() {
                   {columnOrders.map(
                     (order) => (
                       <OrderCard
-                          key={order.id}
-                          order={order}
-                          className={`
-                            border-2
-                            ${getUrgencyColor(order.delivery_time)}
-                          `}
-                        >
+                        key={order.id}
+                        order={order}
+                        
+                      >
                         {/* TOP */}
                         <div className="flex justify-between items-start">
                           <div>
@@ -380,14 +353,7 @@ export default function LabPage() {
                               : "-"}
                           </div>
 
-                          <div className={`
-                              text-xl lg:text-2xl font-black
-                              ${
-                                getRemainingTime(order.delivery_time).includes("RITARDO")
-                                  ? "text-red-600"
-                                  : "text-black"
-                              }
-                            `}>
+                          <div className="text-lg font-bold">
                             {getRemainingTime(
                               order.delivery_time
                             )}
@@ -405,7 +371,7 @@ export default function LabPage() {
                                 key={
                                   index
                                 }
-                                className="bg-white rounded-2xl px-4 py-3 flex justify-between items-center shadow-sm"
+                                className="bg-white rounded-xl px-3 py-2 flex justify-between"
                               >
                                 <div className="font-semibold">
                                   {
@@ -429,44 +395,29 @@ export default function LabPage() {
                         {/* ACTION */}
                         <div className="mt-5">
                           <button
-  onPointerDown={(e) => {
-    e.stopPropagation();
-  }}
-  onClick={async (e) => {
-    e.stopPropagation();
+                            onClick={async () => {
+                              const nextIndex =
+                                columns.indexOf(
+                                  order.status
+                                ) + 1;
 
-    const currentIndex =
-      columns.indexOf(order.status);
+                              if (
+                                nextIndex >=
+                                columns.length
+                              )
+                                return;
 
-    const nextIndex =
-      currentIndex + 1;
-
-    if (nextIndex >= columns.length)
-      return;
-
-    const nextStatus =
-      columns[nextIndex] as OrderStatus;
-
-    await updateOrderStatus(
-      order.id,
-      nextStatus
-    );
-
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === order.id
-          ? {
-              ...o,
-              status: nextStatus,
-            }
-          : o
-      )
-    );
-  }}
-  className="w-full bg-black text-white rounded-2xl py-4 text-xl font-bold hover:opacity-90 transition"
->
-  Avanza Stato
-</button>
+                              await updateOrderStatus(
+                                order.id,
+                                columns[
+                                  nextIndex
+                                ]
+                              );
+                            }}
+                            className="w-full bg-black text-white rounded-xl py-4 text-xl font-semibold"
+                          >
+                            Avanza Stato
+                          </button>
                         </div>
                       </OrderCard>
                     )
