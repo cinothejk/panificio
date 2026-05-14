@@ -307,7 +307,7 @@ export default function OrdersPage() {
       </div>
 
       {/* 3 COLONNE */}
-      <div className="grid grid-cols-3 gap-6 h-[calc(100vh-120px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-120px)]">
 
         {/* COL 1 */}
         <div className="space-y-4 overflow-y-auto">
