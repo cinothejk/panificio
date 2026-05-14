@@ -48,6 +48,7 @@ export default function OrdersPage() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [search, setSearch] = useState("");
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -62,10 +63,29 @@ export default function OrdersPage() {
         () => loadOrders()
       )
       .subscribe();
+    
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
 
     return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+
       supabase.removeChannel(channel);
     };
+
+    /*
+    return () => {
+      supabase.removeChannel(channel);
+    }; */
   }, []);
 
   async function checkUser() {
@@ -291,19 +311,45 @@ export default function OrdersPage() {
     setEditingOrderId(null);
   }
 
+  async function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }
+
+
   return (
     <main className="min-h-screen bg-gray-100 p-4 lg:p-6 overflow-y-auto">
 
       {/* HEADER */}
-      <div className="flex justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl lg:text-4xl font-bold">Gestione Ordini</h1>
 
-        <button
-          onClick={() => supabase.auth.signOut().then(() => router.push("/login"))}
-          className="bg-red-500 text-white px-5 py-3 rounded-2xl"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-3">
+
+          <button
+            onClick={toggleFullscreen}
+            className="bg-black text-white px-5 py-3 rounded-2xl font-semibold"
+          >
+            {isFullscreen ? "Esci Fullscreen" : "Fullscreen"}
+          </button>
+
+          <button
+            onClick={() =>
+              supabase.auth
+                .signOut()
+                .then(() => router.push("/login"))
+            }
+            className="bg-red-500 text-white px-5 py-3 rounded-2xl font-semibold"
+          >
+            Logout
+          </button>
+
+        </div>
       </div>
 
       {/* 3 COLONNE */}
