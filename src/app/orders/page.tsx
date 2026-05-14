@@ -377,7 +377,7 @@ export default function OrdersPage() {
         </div>
 
         {/* COL 2 */}
-        <div className="bg-white p-4 rounded-3xl overflow-y-auto">
+        <div className="bg-white p-4 rounded-3xl overflow-y-auto lg:sticky lg:top-6">
 
           <h2 className="font-bold mb-4">Ordine</h2>
 
@@ -428,7 +428,7 @@ export default function OrdersPage() {
         </div>
 
         {/* COL 3 */}
-        <div className="bg-white p-4 rounded-3xl overflow-y-auto">
+        <div className="bg-white p-4 rounded-3xl overflow-y-auto lg:sticky lg:top-6">
 
           <h2 className="font-bold mb-4">Ordini Live</h2>
 
