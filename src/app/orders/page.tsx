@@ -296,7 +296,7 @@ export default function OrdersPage() {
 
       {/* HEADER */}
       <div className="flex justify-between mb-6">
-        <h1 className="text-4xl font-bold">Gestione Ordini</h1>
+        <h1 className="text-2xl lg:text-4xl font-bold">Gestione Ordini</h1>
 
         <button
           onClick={() => supabase.auth.signOut().then(() => router.push("/login"))}
@@ -310,7 +310,7 @@ export default function OrdersPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:h-[calc(100vh-120px)]">
 
         {/* COL 1 */}
-        <div className="space-y-4 overflow-y-auto">
+        <div className="space-y-4 lg:overflow-y-auto">
 
           {/* CLIENTE */}
           <div className="bg-white p-4 rounded-3xl">
@@ -377,7 +377,7 @@ export default function OrdersPage() {
         </div>
 
         {/* COL 2 */}
-        <div className="bg-white p-4 rounded-3xl overflow-y-auto lg:sticky lg:top-6">
+        <div className="bg-white p-4 rounded-3xl lg:overflow-y-auto lg:sticky lg:top-6">
 
           <h2 className="font-bold mb-4">Ordine</h2>
 
@@ -428,7 +428,7 @@ export default function OrdersPage() {
         </div>
 
         {/* COL 3 */}
-        <div className="bg-white p-4 rounded-3xl overflow-y-auto lg:sticky lg:top-6">
+        <div className="bg-white p-4 rounded-3xl lg:overflow-y-auto lg:sticky lg:top-6">
 
           <h2 className="font-bold mb-4">Ordini Live</h2>
 
