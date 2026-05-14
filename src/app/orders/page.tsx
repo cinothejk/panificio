@@ -38,29 +38,16 @@ export default function OrdersPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
-  const [customerName, setCustomerName] =
-    useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
 
-  const [customerPhone, setCustomerPhone] =
-    useState("");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [manualTotal, setManualTotal] = useState("");
 
-  const [deliveryTime, setDeliveryTime] =
-    useState("");
-
-  const [cartItems, setCartItems] = useState<
-    CartItem[]
-  >([]);
-
-  const [manualTotal, setManualTotal] =
-    useState("");
-
-  const [selectedCategory, setSelectedCategory] =
-    useState("ALL");
-
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [search, setSearch] = useState("");
-
-  const [editingOrderId, setEditingOrderId] =
-    useState<string | null>(null);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -71,14 +58,8 @@ export default function OrdersPage() {
       .channel("orders-live")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-        },
-        () => {
-          loadOrders();
-        }
+        { event: "*", schema: "public", table: "orders" },
+        () => loadOrders()
       )
       .subscribe();
 
@@ -88,12 +69,8 @@ export default function OrdersPage() {
   }, []);
 
   async function checkUser() {
-    const { data } =
-      await supabase.auth.getUser();
-
-    if (!data.user) {
-      router.push("/login");
-    }
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) router.push("/login");
   }
 
   async function loadProducts() {
@@ -103,86 +80,52 @@ export default function OrdersPage() {
       .order("category")
       .order("name");
 
-    if (data) {
-      setProducts(data);
-    }
+    if (data) setProducts(data);
   }
 
   async function loadOrders() {
     const { data } = await supabase
       .from("orders")
       .select("*")
-      .order("created_at", {
-        ascending: false,
-      });
+      .order("created_at", { ascending: false });
 
-    if (data) {
-      setOrders(data);
-    }
+    if (data) setOrders(data);
   }
 
   const categories = useMemo(() => {
-    const unique = [
-      ...new Set(
-        products.map((p) => p.category)
-      ),
-    ];
-
+    const unique = [...new Set(products.map((p) => p.category))];
     return ["ALL", ...unique];
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const categoryMatch =
-        selectedCategory === "ALL" ||
-        product.category ===
-          selectedCategory;
-
-      const searchMatch =
-        product.name
-          .toLowerCase()
-          .includes(search.toLowerCase());
-
-      return categoryMatch && searchMatch;
+    return products.filter((p) => {
+      const matchCat = selectedCategory === "ALL" || p.category === selectedCategory;
+      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
     });
-  }, [
-    products,
-    selectedCategory,
-    search,
-  ]);
+  }, [products, selectedCategory, search]);
 
   function addProduct(product: Product) {
-    const existing = cartItems.find(
-      (item) =>
-        item.product_id === product.id
-    );
+    const existing = cartItems.find(i => i.product_id === product.id);
 
-    if (existing) {
-      if (product.price_type === "WEIGHT") {
-        return; // evita duplicati per peso
-      }
-
-      setCartItems((current) =>
-        current.map((item) =>
+    if (existing && product.price_type === "FIXED") {
+      setCartItems(prev =>
+        prev.map(item =>
           item.product_id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       );
-
       return;
     }
 
-    setCartItems((current) => [
-      ...current,
+    setCartItems(prev => [
+      ...prev,
       {
         product_id: product.id,
         name: product.name,
         quantity: 1,
-        unit_price: Number(product.price),
+        unit_price: product.price,
         category: product.category,
         price_type: product.price_type,
         weight: product.price_type === "WEIGHT" ? 0 : undefined,
@@ -190,125 +133,75 @@ export default function OrdersPage() {
     ]);
   }
 
-  function removeProduct(productId: string) {
-    setCartItems((current) =>
-      current.filter(
-        (item) =>
-          item.product_id !== productId
-      )
-    );
-  }
-
-  function updateQuantity(
-    productId: string,
-    quantity: number
-  ) {
-    if (quantity <= 0) {
-      removeProduct(productId);
+  function updateQuantity(id: string, qty: number) {
+    if (qty <= 0) {
+      setCartItems(prev => prev.filter(i => i.product_id !== id));
       return;
     }
 
-    setCartItems((current) =>
-      current.map((item) =>
-        item.product_id === productId
-          ? {
-              ...item,
-              quantity,
-            }
-          : item
+    setCartItems(prev =>
+      prev.map(i =>
+        i.product_id === id ? { ...i, quantity: qty } : i
       )
     );
   }
 
-  function updateWeight(
-    productId: string,
-    weight: number
-  ) {
-    setCartItems((current) =>
-      current.map((item) =>
-        item.product_id === productId
-          ? {
-              ...item,
-              weight,
-            }
-          : item
+  function updateWeight(id: string, weight: number) {
+    setCartItems(prev =>
+      prev.map(i =>
+        i.product_id === id ? { ...i, weight } : i
       )
     );
+  }
+
+  function removeProduct(id: string) {
+    setCartItems(prev => prev.filter(i => i.product_id !== id));
   }
 
   function calculateItemTotal(item: CartItem) {
     if (item.price_type === "WEIGHT") {
       return (item.weight || 0) * item.unit_price;
     }
-
     return item.quantity * item.unit_price;
   }
 
   const automaticTotal = cartItems.reduce(
-    (sum, item) =>
-      sum + calculateItemTotal(item),
+    (sum, item) => sum + calculateItemTotal(item),
     0
   );
 
-  const total =
-    manualTotal !== ""
-      ? Number(manualTotal)
-      : automaticTotal;
+  const total = manualTotal !== "" ? Number(manualTotal) : automaticTotal;
 
   async function createOrder() {
-    if (
-      !customerName ||
-      cartItems.length === 0
-    ) {
-      alert(
-        "Compila cliente e prodotti"
-      );
-      return;
-    }
+    if (!customerName || cartItems.length === 0) return;
 
     if (editingOrderId) {
       await updateOrder();
       return;
     }
 
-    const { data: order, error } =
-      await supabase
-        .from("orders")
-        .insert({
-          customer_name: customerName,
-          customer_phone:
-            customerPhone,
-          delivery_time:
-            deliveryTime || null,
-          total,
-        })
-        .select()
-        .single();
+    const { data: order } = await supabase
+      .from("orders")
+      .insert({
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        delivery_time: deliveryTime || null,
+        total,
+      })
+      .select()
+      .single();
 
-    if (error || !order) {
-      console.error(error);
-      return;
-    }
+    if (!order) return;
 
-    const items = cartItems.map(
-      (item) => ({
+    await supabase.from("order_items").insert(
+      cartItems.map(item => ({
         order_id: order.id,
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
         weight: item.weight || null,
-      })
+      }))
     );
-
-    const { error: itemsError } =
-      await supabase
-        .from("order_items")
-        .insert(items);
-
-    if (itemsError) {
-      console.error(itemsError);
-      return;
-    }
 
     resetForm();
   }
@@ -316,61 +209,77 @@ export default function OrdersPage() {
   async function updateOrder() {
     if (!editingOrderId) return;
 
-    await supabase
-      .from("orders")
+    await supabase.from("orders")
       .update({
         customer_name: customerName,
-        customer_phone:
-          customerPhone,
-        delivery_time:
-          deliveryTime || null,
+        customer_phone: customerPhone,
+        delivery_time: deliveryTime || null,
         total,
       })
       .eq("id", editingOrderId);
 
-    await supabase
-      .from("order_items")
+    await supabase.from("order_items")
       .delete()
       .eq("order_id", editingOrderId);
 
-    const items = cartItems.map(
-      (item) => ({
+    await supabase.from("order_items").insert(
+      cartItems.map(item => ({
         order_id: editingOrderId,
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
         weight: item.weight || null,
-      })
+      }))
     );
-
-    await supabase
-      .from("order_items")
-      .insert(items);
 
     resetForm();
     loadOrders();
   }
 
-  async function deleteOrder(
-    orderId: string
-  ) {
-    const confirmed = confirm(
-      "Eliminare ordine?"
-    );
+  async function deleteOrder(id: string) {
+    if (!confirm("Eliminare ordine?")) return;
 
-    if (!confirmed) return;
-
-    await supabase
-      .from("order_items")
-      .delete()
-      .eq("order_id", orderId);
-
-    await supabase
-      .from("orders")
-      .delete()
-      .eq("id", orderId);
+    await supabase.from("order_items").delete().eq("order_id", id);
+    await supabase.from("orders").delete().eq("id", id);
 
     loadOrders();
+  }
+
+  async function editOrder(order: Order) {
+    setEditingOrderId(order.id);
+
+    setCustomerName(order.customer_name);
+    setCustomerPhone(order.customer_phone || "");
+    setDeliveryTime(order.delivery_time || "");
+
+    const { data: items } = await supabase
+      .from("order_items")
+      .select(`
+        product_id,
+        quantity,
+        unit_price,
+        weight,
+        products (
+          name,
+          category,
+          price_type
+        )
+      `)
+      .eq("order_id", order.id);
+
+    if (!items) return;
+
+    const formatted: CartItem[] = items.map((i: any) => ({
+      product_id: i.product_id,
+      name: i.products.name,
+      category: i.products.category,
+      price_type: i.products.price_type,
+      quantity: i.quantity,
+      unit_price: i.unit_price,
+      weight: i.weight || undefined,
+    }));
+
+    setCartItems(formatted);
   }
 
   function resetForm() {
@@ -380,397 +289,178 @@ export default function OrdersPage() {
     setCartItems([]);
     setManualTotal("");
     setEditingOrderId(null);
-
-    loadOrders();
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-bold">
-            Gestione Ordini
-          </h1>
+    <main className="h-screen bg-gray-100 p-6 overflow-hidden">
 
-          <div className="text-gray-500 mt-1">
-            Panificio Manager
-          </div>
-        </div>
+      {/* HEADER */}
+      <div className="flex justify-between mb-6">
+        <h1 className="text-4xl font-bold">Gestione Ordini</h1>
 
         <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            router.push("/login");
-          }}
-          className="bg-red-500 text-white px-5 py-3 rounded-2xl font-semibold"
+          onClick={() => supabase.auth.signOut().then(() => router.push("/login"))}
+          className="bg-red-500 text-white px-5 py-3 rounded-2xl"
         >
           Logout
         </button>
       </div>
 
-      <div className="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
-        {/* LEFT */}
-        <div className="space-y-6">
-          {/* CUSTOMER */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
-            <h2 className="text-2xl font-bold mb-5">
-              Cliente
-            </h2>
+      {/* 3 COLONNE */}
+      <div className="grid grid-cols-3 gap-6 h-[calc(100vh-120px)]">
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                placeholder="Nome cliente"
-                value={customerName}
-                onChange={(e) =>
-                  setCustomerName(
-                    e.target.value
-                  )
-                }
-                className="border rounded-2xl p-4"
-              />
+        {/* COL 1 */}
+        <div className="space-y-4 overflow-y-auto">
 
-              <input
-                type="text"
-                placeholder="Telefono"
-                value={customerPhone}
-                onChange={(e) =>
-                  setCustomerPhone(
-                    e.target.value
-                  )
-                }
-                className="border rounded-2xl p-4"
-              />
+          {/* CLIENTE */}
+          <div className="bg-white p-4 rounded-3xl">
+            <h2 className="font-bold mb-3">Cliente</h2>
 
-              <input
-                type="datetime-local"
-                value={deliveryTime}
-                onChange={(e) =>
-                  setDeliveryTime(
-                    e.target.value
-                  )
-                }
-                className="border rounded-2xl p-4"
-              />
-            </div>
+            <input className="border p-2 w-full mb-2 rounded-xl"
+              placeholder="Nome"
+              value={customerName}
+              onChange={e => setCustomerName(e.target.value)}
+            />
+
+            <input className="border p-2 w-full mb-2 rounded-xl"
+              placeholder="Telefono"
+              value={customerPhone}
+              onChange={e => setCustomerPhone(e.target.value)}
+            />
+
+            <input type="datetime-local"
+              className="border p-2 w-full rounded-xl"
+              value={deliveryTime}
+              onChange={e => setDeliveryTime(e.target.value)}
+            />
           </div>
 
           {/* PRODUCTS */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
-              <h2 className="text-2xl font-bold">
-                Prodotti
-              </h2>
+          <div className="bg-white p-4 rounded-3xl">
+            <input
+              className="border p-2 w-full mb-3 rounded-xl"
+              placeholder="Cerca..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
 
-              <input
-                type="text"
-                placeholder="Cerca prodotto..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                className="border rounded-2xl px-4 py-3 w-full lg:w-72"
-              />
-            </div>
-
-            {/* CATEGORIES */}
-            <div className="flex flex-wrap gap-3 mb-6">
-              {categories.map((category) => (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {categories.map(c => (
                 <button
-                  key={category}
-                  onClick={() =>
-                    setSelectedCategory(
-                      category
-                    )
-                  }
-                  className={`px-5 py-3 rounded-2xl font-semibold transition ${
-                    selectedCategory ===
-                    category
-                      ? "bg-black text-white"
-                      : "bg-gray-200"
+                  key={c}
+                  onClick={() => setSelectedCategory(c)}
+                  className={`px-3 py-1 rounded-xl ${
+                    selectedCategory === c ? "bg-black text-white" : "bg-gray-200"
                   }`}
                 >
-                  {category}
+                  {c}
                 </button>
               ))}
             </div>
 
-            {/* PRODUCT GRID */}
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredProducts.map(
-                (product) => (
-                  <button
-                    key={product.id}
-                    onClick={() =>
-                      addProduct(product)
-                    }
-                    className="rounded-2xl border p-5 bg-gray-50 hover:bg-gray-100 transition text-left"
-                  >
-                    <div className="text-xl font-bold">
-                      {product.name}
-                    </div>
-
-                    <div className="mt-2 text-sm text-gray-500">
-                      {
-                        product.category
-                      }
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="font-bold text-lg">
-                        {product.price_type === "WEIGHT"
-                        ? `€${Number(product.price).toFixed(2)}/kg`
-                        : `€${Number(product.price).toFixed(2)}`}
-                      </div>
-
-                      <div
-                        className={`text-xs px-3 py-1 rounded-full font-semibold ${
-                          product.price_type ===
-                          "WEIGHT"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {product.price_type}
-                      </div>
-                    </div>
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <div className="space-y-6">
-          {/* CART */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm sticky top-6">
-            <h2 className="text-2xl font-bold mb-6">
-              Ordine
-            </h2>
-
-            {cartItems.length === 0 && (
-              <div className="text-gray-500">
-                Nessun prodotto aggiunto
-              </div>
-            )}
-
-            <div className="space-y-4 max-h-[450px] overflow-y-auto">
-              {cartItems.map((item) => (
-                <div
-                  key={item.product_id}
-                  className="border rounded-2xl p-4"
+            <div className="space-y-2">
+              {filteredProducts.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => addProduct(p)}
+                  className="w-full text-left border p-3 rounded-xl"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-bold text-lg">
-                        {item.name}
-                      </div>
-
-                      <div className="text-sm text-gray-500">
-                        {
-                          item.category
-                        }
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        removeProduct(
-                          item.product_id
-                        )
-                      }
-                      className="text-red-500 font-bold"
-                    >
-                      ✕
-                    </button>
+                  <div className="font-bold">{p.name}</div>
+                  <div className="text-sm text-gray-500">
+                    {p.price_type === "WEIGHT" ? `${p.price}/kg` : `€${p.price}`}
                   </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() =>
-                          updateQuantity(
-                            item.product_id,
-                            item.quantity -
-                              1
-                          )
-                        }
-                        className="w-10 h-10 rounded-xl bg-gray-200 text-xl"
-                      >
-                        -
-                      </button>
-
-                      <div className="text-xl font-bold w-8 text-center">
-                        {item.quantity}
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          updateQuantity(
-                            item.product_id,
-                            item.quantity +
-                              1
-                          )
-                        }
-                        className="w-10 h-10 rounded-xl bg-gray-200 text-xl"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className="font-bold text-lg">
-                      €
-                      {calculateItemTotal(item).toFixed(2)}
-                    </div>
-                  </div>
-
-                  {item.price_type ===
-                    "WEIGHT" && (
-                    <div className="mt-4">
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Peso (kg)"
-                        value={
-                          item.weight || ""
-                        }
-                        onChange={(e) =>
-                          updateWeight(
-                            item.product_id,
-                            Number(
-                              e.target.value
-                            )
-                          )
-                        }
-                        className="w-full border rounded-xl p-3"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">
-                        € {item.unit_price}/kg
-                      </div>
-                    </div>
-                  )}
-                </div>
+                </button>
               ))}
             </div>
+          </div>
 
-            {/* TOTAL */}
-            <div className="mt-6 border-t pt-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-xl font-bold">
-                  Totale Automatico
-                </div>
+        </div>
 
-                <div className="text-2xl font-bold">
-                  €
-                  {automaticTotal.toFixed(
-                    2
-                  )}
-                </div>
+        {/* COL 2 */}
+        <div className="bg-white p-4 rounded-3xl overflow-y-auto">
+
+          <h2 className="font-bold mb-4">Ordine</h2>
+
+          {cartItems.map(item => (
+            <div key={item.product_id} className="border p-3 rounded-xl mb-3">
+
+              <div className="flex justify-between">
+                <div className="font-bold">{item.name}</div>
+                <button onClick={() => removeProduct(item.product_id)}>✕</button>
               </div>
 
-              <div>
-                <div className="font-semibold mb-2">
-                  Totale Finale
-                </div>
-
+              {item.price_type === "WEIGHT" ? (
                 <input
                   type="number"
-                  step="0.01"
-                  placeholder="Inserisci totale manuale"
-                  value={manualTotal}
-                  onChange={(e) =>
-                    setManualTotal(
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-2xl p-4 text-3xl font-bold"
+                  className="border mt-2 p-2 w-full rounded-xl"
+                  placeholder="kg"
+                  value={item.weight || ""}
+                  onChange={e => updateWeight(item.product_id, Number(e.target.value))}
                 />
+              ) : (
+                <div className="flex gap-3 mt-2">
+                  <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)}>-</button>
+                  <div>{item.quantity}</div>
+                  <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)}>+</button>
+                </div>
+              )}
+
+              <div className="font-bold text-right mt-2">
+                € {calculateItemTotal(item).toFixed(2)}
               </div>
 
-              <button
-                onClick={createOrder}
-                className="w-full mt-6 bg-black text-white rounded-2xl p-5 text-xl font-bold hover:opacity-90 transition"
-              >
-                {editingOrderId
-                  ? "Aggiorna Ordine"
-                  : "Salva Ordine"}
-              </button>
             </div>
+          ))}
+
+          <div className="border-t pt-4 mt-4">
+            <div className="text-xl font-bold">
+              Totale: € {automaticTotal.toFixed(2)}
+            </div>
+
+            <button
+              onClick={createOrder}
+              className="w-full mt-4 bg-black text-white p-3 rounded-xl"
+            >
+              {editingOrderId ? "Aggiorna" : "Salva"}
+            </button>
           </div>
 
-          {/* LIVE ORDERS */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
-            <h2 className="text-2xl font-bold mb-6">
-              Ordini Live
-            </h2>
-
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="border rounded-2xl p-5"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="text-xl font-bold">
-                        {
-                          order.customer_name
-                        }
-                      </div>
-
-                      <div className="text-gray-500 mt-1">
-                        📞{" "}
-                        {order.customer_phone ||
-                          "-"}
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold text-sm">
-                      {order.status}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 text-gray-500">
-                    ⏰{" "}
-                    {order.delivery_time
-                      ? new Date(
-                          order.delivery_time
-                        ).toLocaleString()
-                      : "Nessun orario"}
-                  </div>
-
-                  <div className="mt-4 text-3xl font-bold">
-                    €
-                    {Number(
-                      order.total
-                    ).toFixed(2)}
-                  </div>
-
-                  <div className="flex gap-3 mt-5">
-                    <button
-                      className="flex-1 bg-black text-white rounded-xl py-3 font-semibold"
-                    >
-                      Modifica
-                    </button>
-
-                    <button
-                      onClick={() =>
-                        deleteOrder(
-                          order.id
-                        )
-                      }
-                      className="flex-1 bg-red-500 text-white rounded-xl py-3 font-semibold"
-                    >
-                      Elimina
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
+
+        {/* COL 3 */}
+        <div className="bg-white p-4 rounded-3xl overflow-y-auto">
+
+          <h2 className="font-bold mb-4">Ordini Live</h2>
+
+          {orders.map(o => (
+            <div key={o.id} className="border p-3 rounded-xl mb-3">
+
+              <div className="font-bold">{o.customer_name}</div>
+              <div className="text-sm text-gray-500">
+                € {Number(o.total).toFixed(2)}
+              </div>
+
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => editOrder(o)}
+                  className="bg-black text-white px-3 py-1 rounded-xl"
+                >
+                  Modifica
+                </button>
+
+                <button
+                  onClick={() => deleteOrder(o.id)}
+                  className="bg-red-500 text-white px-3 py-1 rounded-xl"
+                >
+                  Elimina
+                </button>
+              </div>
+
+            </div>
+          ))}
+
+        </div>
+
       </div>
     </main>
   );
