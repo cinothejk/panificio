@@ -292,7 +292,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <main className="h-screen bg-gray-100 p-6 overflow-hidden">
+    <main className="min-h-screen bg-gray-100 p-4 lg:p-6 overflow-y-auto">
 
       {/* HEADER */}
       <div className="flex justify-between mb-6">
