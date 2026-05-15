@@ -173,9 +173,9 @@ export default function LabPage() {
     }
   }
 
-  async function handleDragEnd(
-    event: DragEndEvent
-  ) {
+
+  /*
+  async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
 
     setActiveOrder(null);
@@ -201,6 +201,46 @@ export default function LabPage() {
     );
 
     //setActiveOrder(null);
+  }*/
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const orderId = active.id as string;
+    const newStatus = over.id as OrderStatus;
+
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, status: newStatus }
+          : o
+      )
+    );
+
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    if (order.status === newStatus) return;
+
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", orderId);
+
+    if (error) {
+      console.error(error);
+
+      // rollback in caso di errore
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, status: order.status }
+            : o
+        )
+      );
+    }
   }
 
   function getUrgencyColor(
@@ -281,6 +321,7 @@ export default function LabPage() {
 
   return (
     <main className="min-h-screen bg-[#f5f1ea] p-3 lg:p-4 overflow-y-auto">
+      
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
 
