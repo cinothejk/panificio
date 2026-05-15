@@ -130,7 +130,11 @@ export default function LabPage() {
       await supabase.auth.getUser();
 
     if (!data.user) {
-      router.push("/login");
+      const currentPath = window.location.pathname;
+
+      router.push(
+        `/login?redirect=${encodeURIComponent(currentPath)}`
+      );
     }
   }
 
@@ -361,7 +365,11 @@ export default function LabPage() {
           <button
             onClick={async () => {
               await supabase.auth.signOut();
-              router.push("/login");
+              const currentPath = window.location.pathname;
+
+              router.push(
+                `/login?redirect=${encodeURIComponent(currentPath)}`
+              );
             }}
             className="bg-red-500 text-white px-5 py-3 rounded-2xl text-lg font-semibold"
           >

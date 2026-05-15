@@ -90,7 +90,13 @@ export default function OrdersPage() {
 
   async function checkUser() {
     const { data } = await supabase.auth.getUser();
-    if (!data.user) router.push("/login");
+    if (!data.user) {
+      const currentPath = window.location.pathname;
+
+      router.push(
+        `/login?redirect=${encodeURIComponent(currentPath)}`
+      );
+    }
   }
 
   async function loadProducts() {

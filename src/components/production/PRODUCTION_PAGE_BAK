@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-
-
 
 type Props = {
   title: string;
@@ -40,9 +37,6 @@ export default function ProductionPage({
   title,
   type,
 }: Props) {
-
-  const router = useRouter();
-
   const [items, setItems] = useState<
     ProductionItem[]
   >([]);
@@ -53,21 +47,8 @@ export default function ProductionPage({
     );
 
   useEffect(() => {
-    checkUser();
     loadProduction();
   }, [selectedDate]);
-
-  async function checkUser() {
-    const { data } = await supabase.auth.getUser();
-
-    if (!data.user) {
-      const currentPath = window.location.pathname;
-
-      router.push(
-        `/login?redirect=${encodeURIComponent(currentPath)}`
-      );
-    }
-  }
 
   async function loadProduction() {
     const { data, error } = await supabase
@@ -178,8 +159,6 @@ export default function ProductionPage({
 
     return groups;
   }, [items]);
-
-  
 
   return (
     <main className="min-h-screen bg-[#f5f1eb] p-6">

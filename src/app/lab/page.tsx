@@ -3,9 +3,6 @@
 export const ssr = false;
 
 import { useRouter } from "next/navigation";
-
-import Column from "@/components/lab/Column";
-import OrderCard from "@/components/lab/OrderCard";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -104,7 +101,11 @@ export default function LabPage() {
       await supabase.auth.getUser();
 
     if (!data.user) {
-      router.push("/login");
+      const currentPath = window.location.pathname;
+
+      router.push(
+        `/login?redirect=${encodeURIComponent(currentPath)}`
+      );
     }
   }
 
@@ -238,7 +239,11 @@ export default function LabPage() {
         <button
           onClick={async () => {
             await supabase.auth.signOut();
-            router.push("/login");
+            const currentPath = window.location.pathname;
+
+            router.push(
+              `/login?redirect=${encodeURIComponent(currentPath)}`
+            );
           }}
           className="bg-red-500 text-white px-5 py-3 rounded-2xl font-bold"
         >

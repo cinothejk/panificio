@@ -2,15 +2,28 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
 
+  const searchParams = useSearchParams();
+
+  const redirect =
+    searchParams.get("redirect") || "/lab";
+
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [password, setPassword] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
 
   async function handleLogin() {
     setLoading(true);
@@ -29,7 +42,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/lab");
+    router.push(redirect);
   }
 
   return (
