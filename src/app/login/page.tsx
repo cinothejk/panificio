@@ -1,21 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import {
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const searchParams = useSearchParams();
+  const [redirect, setRedirect] =
+    useState("/lab");
 
-  const redirect =
-    searchParams.get("redirect") || "/lab";
+  const [email, setEmail] =
+    useState("");
 
-  const [email, setEmail] = useState("");
   const [password, setPassword] =
     useState("");
 
@@ -24,6 +21,19 @@ export default function LoginPage() {
 
   const [error, setError] =
     useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const redirectParam =
+      params.get("redirect");
+
+    if (redirectParam) {
+      setRedirect(redirectParam);
+    }
+  }, []);
 
   async function handleLogin() {
     setLoading(true);
