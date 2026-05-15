@@ -482,45 +482,62 @@ export default function LabPage() {
 
                         {/* ACTION */}
                         <div className="mt-5">
-                          <button
-  onPointerDown={(e) => {
-    e.stopPropagation();
-  }}
-  onClick={async (e) => {
-    e.stopPropagation();
+                        <button
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onTouchStart={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
 
-    const currentIndex =
-      columns.indexOf(order.status);
+                            const currentIndex =
+                              columns.indexOf(order.status);
 
-    const nextIndex =
-      currentIndex + 1;
+                            const nextIndex =
+                              currentIndex + 1;
 
-    if (nextIndex >= columns.length)
-      return;
+                            if (nextIndex >= columns.length)
+                              return;
 
-    const nextStatus =
-      columns[nextIndex] as OrderStatus;
+                            const nextStatus =
+                              columns[nextIndex] as OrderStatus;
 
-    await updateOrderStatus(
-      order.id,
-      nextStatus
-    );
+                            await updateOrderStatus(
+                              order.id,
+                              nextStatus
+                            );
 
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === order.id
-          ? {
-              ...o,
-              status: nextStatus,
-            }
-          : o
-      )
-    );
-  }}
-  className="w-full bg-black text-white rounded-2xl py-4 text-xl font-bold hover:opacity-90 transition"
->
-  Avanza Stato
-</button>
+                            setOrders((prev) =>
+                              prev.map((o) =>
+                                o.id === order.id
+                                  ? {
+                                      ...o,
+                                      status: nextStatus,
+                                    }
+                                  : o
+                              )
+                            );
+                          }}
+                          className="
+                            w-full
+                            bg-black
+                            text-white
+                            rounded-2xl
+                            py-4
+                            text-xl
+                            font-bold
+                            hover:opacity-90
+                            transition
+                            touch-manipulation
+                          "
+                        >
+                          Avanza Stato
+                        </button>
                         </div>
                       </OrderCard>
                     )
