@@ -13,6 +13,7 @@ import {
   MouseSensor,
   useSensor,
   useSensors,
+  closestCorners,
 } from "@dnd-kit/core";
 
 import Column from "@/components/lab/Column";
@@ -333,8 +334,10 @@ export default function LabPage() {
       {/* BOARD */}
       <DndContext
           sensors={sensors}
+          collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          
         >
         <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 lg:h-[calc(100vh-110px)]">
           {columns.map((column) => {

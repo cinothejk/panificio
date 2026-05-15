@@ -20,7 +20,12 @@ export default function Column({
   return (
     <div
       ref={setNodeRef}
-      className={className}
+      className={`
+        min-h-full
+        rounded-3xl
+        p-4
+        ${className}
+      `}
     >
       {children}
     </div>
