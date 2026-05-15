@@ -25,15 +25,22 @@ export default function OrderCard({
     listeners,
     setNodeRef,
     transform,
+    isDragging,
   } = useDraggable({
     id: order.id,
   });
 
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const style = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+
+    zIndex: isDragging ? 9999 : 1,
+
+    opacity: isDragging ? 0.9 : 1,
+
+    position: "relative" as const,
+  };
 
   return (
     <div
@@ -42,7 +49,7 @@ export default function OrderCard({
       {...listeners}
       {...attributes}
       className={`
-        touch-none
+        touch-manipulation
         rounded-3xl
         shadow-sm
         p-5

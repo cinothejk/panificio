@@ -3,9 +3,11 @@
 export const ssr = false;
 
 import { useRouter } from "next/navigation";
-import { 
+import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 
 import Column from "@/components/lab/Column";
@@ -57,6 +59,7 @@ const columnColors: Record<
 
 
 
+
 export default function LabPage() {
 
   const router = useRouter();
@@ -64,6 +67,8 @@ export default function LabPage() {
   const [orders, setOrders] = useState<Order[]>(
     []
   );
+
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const audio = new Audio(
@@ -98,6 +103,21 @@ export default function LabPage() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  function handleDragStart(
+    event: DragStartEvent
+    ) {
+      const orderId = event.active.id;
+
+      const order = orders.find(
+        (o) => o.id === orderId
+      );
+
+      if (order) {
+        setActiveOrder(order);
+      }
+    }
+
 
   async function checkUser() {
     const { data } =
@@ -152,6 +172,8 @@ export default function LabPage() {
   ) {
     const { active, over } = event;
 
+    setActiveOrder(null);
+
     if (!over) return;
 
     const orderId = active.id as string;
@@ -171,6 +193,8 @@ export default function LabPage() {
       orderId,
       newStatus
     );
+
+    //setActiveOrder(null);
   }
 
   function getUrgencyColor(
@@ -284,7 +308,10 @@ export default function LabPage() {
       </div>
 
       {/* BOARD */}
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
         <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 lg:h-[calc(100vh-110px)]">
           {columns.map((column) => {
             const columnOrders =
@@ -476,6 +503,19 @@ export default function LabPage() {
             );
           })}
         </div>
+        <DragOverlay>
+          {activeOrder ? (
+            <div className="rounded-3xl bg-white shadow-2xl p-5 border-2 border-black rotate-1 scale-105 w-[350px] opacity-95">
+              <div className="text-2xl font-bold">
+                {activeOrder.customer_name}
+              </div>
+
+              <div className="mt-2 text-lg">
+                € {Number(activeOrder.total).toFixed(2)}
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </main>
   );
