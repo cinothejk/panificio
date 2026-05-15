@@ -8,6 +8,11 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  MouseSensor,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 
 import Column from "@/components/lab/Column";
@@ -255,6 +260,24 @@ export default function LabPage() {
     return `${minutes} min`;
   }
 
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 8,
+      },
+    }),
+
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+
   return (
     <main className="min-h-screen bg-[#f5f1ea] p-3 lg:p-4 overflow-y-auto">
       {/* HEADER */}
@@ -309,6 +332,7 @@ export default function LabPage() {
 
       {/* BOARD */}
       <DndContext
+          sensors={sensors}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >

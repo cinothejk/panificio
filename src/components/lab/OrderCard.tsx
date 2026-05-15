@@ -49,7 +49,7 @@ export default function OrderCard({
       {...listeners}
       {...attributes}
       className={`
-        touch-manipulation
+        touch-none
         rounded-3xl
         shadow-sm
         p-5
