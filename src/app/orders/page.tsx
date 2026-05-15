@@ -193,7 +193,18 @@ export default function OrdersPage() {
   const total = manualTotal !== "" ? Number(manualTotal) : automaticTotal;
 
   async function createOrder() {
-    if (!customerName || cartItems.length === 0) return;
+    if (
+      !customerName.trim() ||
+      !customerPhone.trim() ||
+      !deliveryTime ||
+      cartItems.length === 0
+    ) {
+      alert(
+        "Compila tutti i dati cliente, orario di consegna e almeno un prodotto"
+      );
+
+      return;
+    }
 
     if (editingOrderId) {
       await updateOrder();
@@ -228,6 +239,18 @@ export default function OrdersPage() {
 
   async function updateOrder() {
     if (!editingOrderId) return;
+    if (
+      !customerName.trim() ||
+      !customerPhone.trim() ||
+      !deliveryTime ||
+      cartItems.length === 0
+    ) {
+      alert(
+        "Compila tutti i dati cliente, orario di consegna e almeno un prodotto"
+      );
+
+      return;
+    }
 
     await supabase.from("orders")
       .update({
@@ -363,18 +386,21 @@ export default function OrdersPage() {
             <h2 className="font-bold mb-3">Cliente</h2>
 
             <input className="border p-2 w-full mb-2 rounded-xl"
+              required
               placeholder="Nome"
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
             />
 
             <input className="border p-2 w-full mb-2 rounded-xl"
+              required
               placeholder="Telefono"
               value={customerPhone}
               onChange={e => setCustomerPhone(e.target.value)}
             />
 
             <input type="datetime-local"
+              required
               className="border p-2 w-full rounded-xl"
               value={deliveryTime}
               onChange={e => setDeliveryTime(e.target.value)}
